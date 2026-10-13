@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Prnt.sc Screenshot Generator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { margin-top: 0; font-size: 1.5rem; }
+    .url-box {
+      font-size: 1.25rem;
+      font-weight: bold;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 20px 0;
+      word-break: break-all;
+      color: var(--accent);
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button, a.btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 10px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    button:hover, a.btn:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+    .history {
+      margin-top: 25px;
+      text-align: left;
+    }
+    .history h2 { font-size: 1.1rem; color: var(--muted); }
+    ul {
+      list-style: none;
+      padding: 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    li {
+      padding: 6px 0;
+      border-bottom: 1px solid #334155;
+      font-size: 0.9rem;
+    }
+    li a { color: var(--accent); text-decoration: none; }
+    li a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Prnt.sc Screenshot Roulette</h1>
+    <p style="color: var(--muted); font-size: 0.9rem;">Generates random 6-character Lightshot IDs</p>
+
+    <div class="url-box" id="urlDisplay">https://prnt.sc/xxxxxx</div>
+
+    <div class="btn-group">
+      <button onclick="generateRandom()">Generate New</button>
+      <a id="openBtn" href="#" target="_blank" class="btn">Open Screenshot ↗</a>
+    </div>
+
+    <div class="history">
+      <h2>Recent History</h2>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+    function generateCode(length = 6) {
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    function generateRandom() {
+      const code = generateCode();
+      const fullUrl = `https://prnt.sc/${code}`;
+      
+      document.getElementById('urlDisplay').textContent = fullUrl;
+      const openBtn = document.getElementById('openBtn');
+      openBtn.href = fullUrl;
+
+      const historyList = document.getElementById('historyList');
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="${fullUrl}" target="_blank">${fullUrl}</a>`;
+      historyList.prepend(li);
+    }
+
+    generateRandom();
+  </script>
+</body>
+</html>
