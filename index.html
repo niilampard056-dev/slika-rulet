@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prnt.sc Turbo Roulette</title>
+  <title>Prnt.sc Turbo Roulette with Speedometer</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -52,6 +52,28 @@
       font-size: 0.9rem;
       color: var(--muted);
       margin-bottom: 15px;
+    }
+    .speedometer-box {
+      background: #0b1329;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #334155;
+    }
+    .speedometer-box label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .speedometer-box input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .speed-value {
+      font-weight: bold;
+      color: var(--accent);
     }
     .btn-group {
       display: flex;
@@ -127,10 +149,16 @@
 
   <div class="container">
     <h1>Prnt.sc Turbo Roulette</h1>
-    <p style="color: var(--muted); font-size: 0.9rem;">Munjevito brzo generisanje i menjanje linkova</p>
+    <p style="color: var(--muted); font-size: 0.9rem;">Kontroliši brzinu rotiranja pomoću Speedometra</p>
 
     <div class="url-box" id="urlDisplay">https://prnt.sc/xxxxxx</div>
     <div class="status" id="statusText">Turbo režim spreman ⚡</div>
+
+    <!-- Speedometer Control -->
+    <div class="speedometer-box">
+      <label for="speedRange">Brzina Auto-Roll-a: <span id="speedLabel" class="speed-value">1.0s</span> po linku</label>
+      <input type="range" id="speedRange" min="200" max="3000" step="100" value="1000" oninput="updateSpeed(this.value)">
+    </div>
 
     <div class="btn-group">
       <button onclick="generateFullRandom()">Potpuno Novi ID</button>
@@ -152,6 +180,7 @@
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let currentCode = '';
     let autoInterval = null;
+    let currentSpeed = 1000; // Početna brzina u milisekundama (1 sekunda)
 
     function getRandomChar() {
       return chars.charAt(Math.floor(Math.random() * chars.length));
@@ -182,14 +211,28 @@
       document.getElementById('urlDisplay').textContent = fullUrl;
       document.getElementById('openBtn').href = fullUrl;
 
-      // Dodaj u istoriju
       const historyList = document.getElementById('historyList');
       const li = document.createElement('li');
       li.innerHTML = `<a href="${fullUrl}" target="_blank">${fullUrl}</a>`;
       historyList.prepend(li);
     }
 
-    // Turbo automatsko vrtenje (menja linkove svake sekunde bez čekanja proxy-ja)
+    // Ažuriranje brzine preko slajdera
+    function updateSpeed(val) {
+      currentSpeed = parseInt(val);
+      const seconds = (currentSpeed / 1000).toFixed(1);
+      document.getElementById('speedLabel').textContent = seconds + 's';
+
+      // Ako je auto-roll već uključen, osveži interval u hodu da odmah primeni novu brzinu
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+          tweakLastTwo();
+        }, currentSpeed);
+      }
+    }
+
+    // Pokretanje i zaustavljanje Turbo Auto-Roll-a
     function toggleTurboAuto() {
       const autoBtn = document.getElementById('autoBtn');
       const statusText = document.getElementById('statusText');
@@ -203,15 +246,15 @@
       } else {
         autoBtn.textContent = 'Zaustavi Turbo-Roll ⏹';
         autoBtn.classList.add('stop');
-        statusText.textContent = 'Turbo Auto-Roll aktivan (vrti na svakih 0.8s)...';
+        statusText.textContent = `Turbo Auto-Roll aktivan (${(currentSpeed/1000).toFixed(1)}s)...`;
         
         autoInterval = setInterval(() => {
           tweakLastTwo();
-        }, 800); // Mijenja svake 0.8 sekunde - super brzo!
+        }, currentSpeed);
       }
     }
 
-    // Generiši prvu sliku pri učitavanju
+    // Inicijalizacija prve slike
     generateFullRandom();
   </script>
 </body>
