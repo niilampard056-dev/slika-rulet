@@ -1,15 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
+<<!DOCTYPE html>
+<html lang="sr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Random Prnt.sc Screenshot Generator</title>
+  <title>Prnt.sc Smart Screenshot Hunter</title>
   <style>
     :root {
       --bg: #0f172a;
       --card-bg: #1e293b;
       --accent: #38bdf8;
       --accent-hover: #0284c7;
+      --sub-accent: #f59e0b;
+      --sub-accent-hover: #d97706;
+      --stop-accent: #ef4444;
+      --stop-hover: #dc2626;
       --text: #f8fafc;
       --muted: #94a3b8;
     }
@@ -28,7 +32,7 @@
       background: var(--card-bg);
       padding: 2rem;
       border-radius: 12px;
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       text-align: center;
@@ -44,27 +48,61 @@
       word-break: break-all;
       color: var(--accent);
     }
+    .status {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 15px;
+      min-height: 20px;
+    }
     .btn-group {
       display: flex;
       gap: 10px;
       justify-content: center;
       flex-wrap: wrap;
+      margin-bottom: 15px;
     }
     button, a.btn {
       background: var(--accent);
       color: #000;
       border: none;
-      padding: 10px 18px;
-      font-size: 1rem;
+      padding: 10px 16px;
+      font-size: 0.95rem;
       font-weight: 600;
       border-radius: 6px;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
     button:hover, a.btn:hover {
       background: var(--accent-hover);
       color: #fff;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .btn-var {
+      background: var(--sub-accent);
+      color: #000;
+    }
+    .btn-var:hover {
+      background: var(--sub-accent-hover);
+      color: #fff;
+    }
+    .btn-auto {
+      background: #10b981;
+      color: #fff;
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .btn-auto:hover {
+      background: #059669;
+    }
+    .btn-auto.stop {
+      background: var(--stop-accent);
+    }
+    .btn-auto.stop:hover {
+      background: var(--stop-hover);
     }
     .history {
       margin-top: 25px;
@@ -89,48 +127,151 @@
 <body>
 
   <div class="container">
-    <h1>Prnt.sc Screenshot Roulette</h1>
-    <p style="color: var(--muted); font-size: 0.9rem;">Generates random 6-character Lightshot IDs</p>
+    <h1>Prnt.sc Smart Hunter</h1>
+    <p style="color: var(--muted); font-size: 0.9rem;">Nasumični ID, Zadnja 2, ili Smart Auto-Search</p>
 
     <div class="url-box" id="urlDisplay">https://prnt.sc/xxxxxx</div>
+    <div class="status" id="statusText">Spremno za pretragu...</div>
 
     <div class="btn-group">
-      <button onclick="generateRandom()">Generate New</button>
-      <a id="openBtn" href="#" target="_blank" class="btn">Open Screenshot ↗</a>
+      <button onclick="searchNewRandom()">Potpuno Novi ID</button>
+      <button class="btn-var" onclick="searchTweakLastTwo()">Zadnja 2</button>
+      <a id="openBtn" href="#" target="_blank" class="btn">Otvori ↗</a>
+    </div>
+
+    <div>
+      <button id="autoBtn" class="btn-auto" onclick="toggleSmartAuto()">Pokreni Smart Auto-Search</button>
     </div>
 
     <div class="history">
-      <h2>Recent History</h2>
+      <h2>Pronađeni aktivni linkovi</h2>
       <ul id="historyList"></ul>
     </div>
   </div>
 
   <script>
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let currentCode = '';
+    let isSearching = false;
+    let autoInterval = null;
 
-    function generateCode(length = 6) {
+    function getRandomChar() {
+      return chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // Generiši potpuno nasumičan 6-karakterni kod
+    function generateFullRandomCode() {
       let result = '';
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      for (let i = 0; i < 6; i++) {
+        result += getRandomChar();
       }
       return result;
     }
 
-    function generateRandom() {
-      const code = generateCode();
-      const fullUrl = `https://prnt.sc/${code}`;
-      
-      document.getElementById('urlDisplay').textContent = fullUrl;
-      const openBtn = document.getElementById('openBtn');
-      openBtn.href = fullUrl;
-
-      const historyList = document.getElementById('historyList');
-      const li = document.createElement('li');
-      li.innerHTML = `<a href="${fullUrl}" target="_blank">${fullUrl}</a>`;
-      historyList.prepend(li);
+    // Zadrži prva 4 znaka i napravi random zadnja 2
+    function generateTweakCode() {
+      if (!currentCode || currentCode.length !== 6) {
+        return generateFullRandomCode();
+      }
+      const firstFour = currentCode.substring(0, 4);
+      const newLastTwo = getRandomChar() + getRandomChar();
+      return firstFour + newLastTwo;
     }
 
-    generateRandom();
+    // Funkcija koja proverava da li slika stvarno postoji
+    async function checkScreenshot(code) {
+      const targetUrl = `https://prnt.sc/${code}`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+      try {
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        if (data && data.contents) {
+          if (data.contents.includes('//i.imgur.com/0vY4YQo.png') || data.contents.includes('img.notfound')) {
+            return false; // Slika je obrisana
+          }
+          return true; // Aktivna slika!
+        }
+      } catch (e) {
+        console.error("Greška pri provjeri:", e);
+      }
+      return false;
+    }
+
+    // Glavna funkcija za traženje aktivne slike (može tražiti potpuno nov ili varijaciju zadnja 2)
+    async function findActive(generatorFunction) {
+      if (isSearching) return;
+      isSearching = true;
+      document.getElementById('statusText').textContent = "Pretražujem aktivne slike u pozadini...";
+
+      let found = false;
+      let attempts = 0;
+
+      while (!found && attempts < 12) {
+        attempts++;
+        const code = generatorFunction();
+        const isValid = await checkScreenshot(code);
+
+        if (isValid) {
+          found = true;
+          currentCode = code;
+          const fullUrl = `https://prnt.sc/${code}`;
+          document.getElementById('urlDisplay').textContent = fullUrl;
+          document.getElementById('openBtn').href = fullUrl;
+          document.getElementById('statusText').textContent = `Pronađeno iz ${attempts}. pokušaja! 🎉`;
+
+          // Dodaj u istoriju
+          const historyList = document.getElementById('historyList');
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="${fullUrl}" target="_blank">${fullUrl}</a>`;
+          historyList.prepend(li);
+          break;
+        } else {
+          document.getElementById('statusText').textContent = `Proveravam... (Pokušaj ${attempts} - prazno, preskačem)`;
+        }
+      }
+
+      if (!found) {
+        document.getElementById('statusText').textContent = "Nisam našao aktivnu sliku u ovom krugu. Pokušaj opet!";
+      }
+      isSearching = false;
+    }
+
+    function searchNewRandom() {
+      findActive(generateFullRandomCode);
+    }
+
+    function searchTweakLastTwo() {
+      findActive(generateTweakCode);
+    }
+
+    // Automatsko traženje (vrti se dok se ne zaustavi)
+    function toggleSmartAuto() {
+      const autoBtn = document.getElementById('autoBtn');
+
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        autoBtn.textContent = 'Pokreni Smart Auto-Search';
+        autoBtn.classList.remove('stop');
+        document.getElementById('statusText').textContent = "Zaustavljeno.";
+      } else {
+        autoBtn.textContent = 'Zaustavi Auto-Search ⏹';
+        autoBtn.classList.add('stop');
+        
+        // Automatski vrti varijacije zadnja 2 znaka na svakih 4 sekunde
+        autoInterval = setInterval(() => {
+          if (!isSearching) {
+            findActive(generateTweakCode);
+          }
+        }, 4000);
+      }
+    }
+
+    // Inicijalno postavi neki kod
+    currentCode = generateFullRandomCode();
+    document.getElementById('urlDisplay').textContent = `https://prnt.sc/${currentCode}`;
+    document.getElementById('openBtn').href = `https://prnt.sc/${currentCode}`;
   </script>
 </body>
 </html>
